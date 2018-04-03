@@ -6,8 +6,7 @@ import java.util.List;
 
 import javafx.application.*;
 
-import javafx.scene.shape.Circle;
-import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.*;
 import javafx.stage.Stage;
 
 import javafx.application.Application;
@@ -16,7 +15,6 @@ import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.ArcType;
 
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -423,9 +421,8 @@ public abstract class Critter {
 	   // public static void displayWorld() {}
 	*/
     public static void displayWorld() {
-        gridpane.setGridLinesVisible(true);
+        //gridpane.setGridLinesVisible(true);
 
-        Scene newScene = new Scene(gridpane, Params.world_width, Params.world_height); //??
 
         for(int i = 0; i < Params.world_width; i++){
             ColumnConstraints col = new ColumnConstraints();
@@ -439,8 +436,8 @@ public abstract class Critter {
             gridpane.getRowConstraints().add(row);
         }
 
-        gridpane.getColumnConstraints().add(new ColumnConstraints(Params.world_width));
-        gridpane.getRowConstraints().add(new RowConstraints(Params.world_height));
+        //gridpane.getColumnConstraints().add(new ColumnConstraints(Params.world_width));
+        //gridpane.getRowConstraints().add(new RowConstraints(Params.world_height));
 
         for(int i = 0; i < population.size(); i++){
             switch(population.get(i).viewShape()){
@@ -448,6 +445,8 @@ public abstract class Critter {
                     Circle c = new Circle();
                     c.setFill(population.get(i).viewFillColor());
                     c.setStroke(population.get(i).viewOutlineColor());
+                    c.setStrokeWidth(5);
+                    gridpane.add(c, population.get(i).x_coord, population.get(i).y_coord);
                     break;
                 case DIAMOND:
                     break;
@@ -459,7 +458,12 @@ public abstract class Critter {
                 case STAR:
                     break;
                 case TRIANGLE:
-
+                    Polygon t = new Polygon();
+                    t.getPoints().addAll(5.0, 0.0, 10.0, 10.0, 0.0, 10.0); //Need to put parameters in addAll()
+                    t.setFill(population.get(i).viewFillColor());
+                    t.setStroke(population.get(i).viewOutlineColor());
+                    t.setStrokeWidth(5);
+                    gridpane.add(t, population.get(i).x_coord, population.get(i).y_coord);
                     break;
             }
         }
