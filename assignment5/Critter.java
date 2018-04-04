@@ -6,6 +6,8 @@ import java.util.List;
 
 import javafx.application.*;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.NumberBinding;
 import javafx.scene.shape.*;
 import javafx.stage.Stage;
 
@@ -55,7 +57,7 @@ public abstract class Critter {
 	
 	public abstract CritterShape viewShape();
 
-	private static GridPane gridpane = new GridPane();
+	//private static GridPane gridpane = new GridPane();
 	
 	private static String myPackage;
 	private	static List<Critter> population = new java.util.ArrayList<Critter>();
@@ -421,49 +423,98 @@ public abstract class Critter {
 	   // public static void displayWorld() {}
 	*/
     public static void displayWorld() {
+        Main.critterWorld.getChildren().clear();
         //gridpane.setGridLinesVisible(true);
+        //Scene newScene = new Scene();
 
 
-        for(int i = 0; i < Params.world_width; i++){
+        /*for(int i = 0; i < Params.world_width; i++){
             ColumnConstraints col = new ColumnConstraints();
-            col.setPercentWidth(20);
+            col.setPercentWidth(Params.world_width);
             gridpane.getColumnConstraints().add(col);
         }
 
         for(int i = 0; i < Params.world_height; i++){
             RowConstraints row = new RowConstraints();
-            row.setPercentHeight(20);                   //Height or width?
+            row.setPercentHeight(Params.world_height);                   //Height or width?
             gridpane.getRowConstraints().add(row);
         }
+        */
 
         //gridpane.getColumnConstraints().add(new ColumnConstraints(Params.world_width));
         //gridpane.getRowConstraints().add(new RowConstraints(Params.world_height));
 
-        for(int i = 0; i < population.size(); i++){
+        /*NumberBinding minSide = Bindings
+                .min(Main.critterWorld.heightProperty(), Main.critterWorld.widthProperty())
+                .divide(population.size());
+        */
+        int scaling = Math.min(Params.world_width / Params.world_height, Params.world_width / Params.world_height);
+
+        for(int i = 0; i < population.size(); i++){         //Set dimensions for each shape
             switch(population.get(i).viewShape()){
                 case CIRCLE:
                     Circle c = new Circle();
+                    c.radiusProperty().bind((Main.critterWorld.widthProperty().divide(Params.world_width)).divide(2));
+                    // ??
+                    // ??
+                    // ??
                     c.setFill(population.get(i).viewFillColor());
                     c.setStroke(population.get(i).viewOutlineColor());
-                    c.setStrokeWidth(5);
-                    gridpane.add(c, population.get(i).x_coord, population.get(i).y_coord);
+                    c.setStrokeWidth(3);
+                    Main.critterWorld.add(c, population.get(i).x_coord, population.get(i).y_coord);
                     break;
                 case DIAMOND:
+                    Polygon d1 = new Polygon();
+                    d1.getPoints().addAll(
+                            (double)scaling/2, 0.0,
+                            0.0, (double) scaling/2,
+                            (double) scaling/2, (double) scaling,
+                            (double) scaling, (double) scaling/2
+                    );
+                    d1.setFill(population.get(i).viewFillColor());
+                    d1.setStroke((population.get(i).viewOutlineColor()));
+                    d1.setStrokeWidth(3);
+                    Main.critterWorld.add(d1, population.get(i).x_coord, population.get(i).y_coord);
                     break;
                 case SQUARE:
                     Rectangle r = new Rectangle();
+                    r.widthProperty().bind(Main.critterWorld.widthProperty().divide(Params.world_width));
+                    r.heightProperty().bind(Main.critterWorld.heightProperty().divide(Params.world_height));
                     r.setFill(population.get(i).viewFillColor());
                     r.setStroke(population.get(i).viewOutlineColor());
+                    r.setStrokeWidth(3);
+                    Main.critterWorld.add(r, population.get(i).x_coord, population.get(i).y_coord);
                     break;
                 case STAR:
+                    Polygon t1 = new Polygon();
+                    Polygon t2 = new Polygon();
+                    t1.getPoints().addAll(
+                            (double) scaling/2,0.0,
+                            0.0, (double)scaling,
+                            (double)scaling, (double)scaling); //Need to put different parameters in addAll()
+                    t1.setFill(population.get(i).viewFillColor());
+                    t1.setStroke(population.get(i).viewOutlineColor());
+                    t1.setStrokeWidth(3);
+                    t2.getPoints().addAll(
+                            0.0, 0.0,
+                            (double)scaling, 0.0,
+                            (double)scaling/2, (double)scaling); //Need to put different parameters in addAll()
+                    t2.setFill(population.get(i).viewFillColor());
+                    t2.setStroke(population.get(i).viewOutlineColor());
+                    t2.setStrokeWidth(3);
+                    Main.critterWorld.add(t1, population.get(i).x_coord, population.get(i).y_coord);
+                    Main.critterWorld.add(t2, population.get(i).x_coord, population.get(i).y_coord);
                     break;
                 case TRIANGLE:
                     Polygon t = new Polygon();
-                    t.getPoints().addAll(5.0, 0.0, 10.0, 10.0, 0.0, 10.0); //Need to put parameters in addAll()
+                    t.getPoints().addAll(
+                            (double) scaling/2,0.0,
+                            0.0, (double)scaling,
+                            (double)scaling, (double)scaling);
                     t.setFill(population.get(i).viewFillColor());
                     t.setStroke(population.get(i).viewOutlineColor());
-                    t.setStrokeWidth(5);
-                    gridpane.add(t, population.get(i).x_coord, population.get(i).y_coord);
+                    t.setStrokeWidth(3);
+                    Main.critterWorld.add(t, population.get(i).x_coord, population.get(i).y_coord);
                     break;
             }
         }
