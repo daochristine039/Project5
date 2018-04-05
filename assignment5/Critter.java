@@ -1,5 +1,6 @@
 package assignment5;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -8,6 +9,8 @@ import javafx.application.*;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.NumberBinding;
+import javafx.geometry.HPos;
+import javafx.geometry.VPos;
 import javafx.scene.shape.*;
 import javafx.stage.Stage;
 
@@ -26,6 +29,7 @@ import javafx.scene.layout.*;
 import javafx.scene.text.*;
 
 import javafx.scene.control.*;
+import org.w3c.dom.css.Rect;
 
 public abstract class Critter {
 	/* NEW FOR PROJECT 5 */
@@ -298,7 +302,34 @@ public abstract class Critter {
 
     }
 	
-	protected final void reproduce(Critter offspring, int direction) {}
+	protected final void reproduce(Critter offspring, int direction) {
+        if(this.energy < Params.min_reproduce_energy){     //If the energy level of the parent is lower than the minimum energy to reproduce,
+            return;                                        //Return
+        }
+
+        offspring.energy = this.energy/2;                  //Energy of offpsring = the parent energy divided by 2 (rounded down)
+        this.energy = Math.round(this.energy/2);           //Lower energy of parent by half (rounded up_
+
+        offspring.x_coord = this.x_coord;                  //Set offspring's x coordinate to parent's x coordinate
+        offspring.y_coord = this.y_coord;                  //Set offspring's y coordinate to parent's y coordinate
+        offspring.walk(direction);                         //Call walk method to place the offspring in a call adjacent to the parent
+
+        if(offspring.x_coord > Params.world_width - 1){    //Update x coordinate if off the top of the world
+            offspring.x_coord -= Params.world_width;
+        } else if(offspring.x_coord < 0){
+            offspring.x_coord += Params.world_width;
+        }
+
+        if(offspring.y_coord > Params.world_height - 1){   //Update y coordinate if off the top of the world
+            offspring.y_coord -= Params.world_height;
+        } else if(offspring.y_coord < 0){
+            offspring.y_coord += Params.world_height;
+        }
+
+        offspring.energy += Params.rest_energy_cost;      //Re-establish the lost rest energy cost
+        offspring.moved = false;                          //Re-establish "moved = false"
+        babies.add(offspring);
+    }
 
 	public abstract void doTimeStep();
 	public abstract boolean fight(String opponent);
@@ -393,9 +424,6 @@ public abstract class Critter {
 
         for (int i = 0; i < population.size(); i++) {             //Set moved back to false
             population.get(i).moved = false;
-        }
-
-        for (int i = 0; i < population.size(); i++) {             //Set moved back to false
             population.get(i).lookInvoked = false;
         }
 
@@ -423,102 +451,214 @@ public abstract class Critter {
 	   // public static void displayWorld() {}
 	*/
     public static void displayWorld() {
-        Main.critterWorld.getChildren().clear();
+        //int size = 20;
+        int width = 1050;
+        int height = 600;
+        double widthCell = (double) width / (double) Params.world_width;
+        double heightCell = (double) height / (double) Params.world_height;
+
+        double min = Math.min(widthCell, heightCell);
+
+        //Main.critterWorld.getChildren().clear();
         //gridpane.setGridLinesVisible(true);
         //Scene newScene = new Scene();
 
+        GridPane newGrid = new GridPane();
+        newGrid.setGridLinesVisible(true);
 
-        /*for(int i = 0; i < Params.world_width; i++){
-            ColumnConstraints col = new ColumnConstraints();
-            col.setPercentWidth(Params.world_width);
-            gridpane.getColumnConstraints().add(col);
+        final int numCols = Params.world_width;
+        final int numRows = Params.world_height;
+        for(int i = 0; i < numCols; i++) {
+            ColumnConstraints colConst = new ColumnConstraints();
+            colConst.setPercentWidth(100.0 / numCols);
+            newGrid.getColumnConstraints().add(colConst);
         }
+        for(int i = 0; i < numRows; i++) {
+            RowConstraints rowConst = new RowConstraints();
+            rowConst.setPercentHeight(100.0 / numRows);
+            newGrid.getRowConstraints().add(rowConst);
+        }
+
 
         for(int i = 0; i < Params.world_height; i++){
-            RowConstraints row = new RowConstraints();
-            row.setPercentHeight(Params.world_height);                   //Height or width?
-            gridpane.getRowConstraints().add(row);
-        }
-        */
+            //boolean found;
+            for (int j = 0; j < Params.world_width; j++){
+                //found = false;
+                for(int k = 0; k < population.size(); k++){
+                    if(population.get(k).y_coord == i && population.get(k).x_coord == j){
+                        if(population.get(k).energy > 0) {
+                            switch (population.get(k).viewShape()) {
+                                case CIRCLE:
+                                    Circle c = new Circle();
+                                    c.setRadius(0.4 * min);
+                                    c.setFill(population.get(k).viewFillColor());
+                                    c.setStroke(population.get(k).viewOutlineColor());
+                                    c.setStrokeWidth(1);
+                                    newGrid.add(c, population.get(k).x_coord, population.get(k).y_coord);
+                                    newGrid.setHalignment(c, HPos.CENTER);
+                                    newGrid.setValignment(c, VPos.CENTER);
+                                    break;
+                                case DIAMOND:
+                                    double newMin = min * 0.8;
+                                    Polygon d1 = new Polygon();
+                                    d1.getPoints().addAll(
+                                            newMin / 3, 0.0,
+                                            0.0, newMin / 2,
+                                            newMin / 3, newMin,
+                                            (newMin / 3) * 2.0, newMin / 2
+                                    );
+                                    d1.setFill(population.get(k).viewFillColor());
+                                    d1.setStroke((population.get(k).viewOutlineColor()));
+                                    d1.setStrokeWidth(1);
+                                    newGrid.add(d1, population.get(k).x_coord, population.get(k).y_coord);
+                                    newGrid.setHalignment(d1, HPos.CENTER);
+                                    newGrid.setValignment(d1, VPos.CENTER);
+                                    break;
+                                case SQUARE:
+                                    Rectangle r = new Rectangle();
+                                    r.heightProperty().set(0.8 * min);
+                                    r.widthProperty().set(0.8 * min);
+                                    r.setFill(population.get(k).viewFillColor());
+                                    r.setStroke(population.get(k).viewOutlineColor());
+                                    r.setStrokeWidth(1);
+                                    newGrid.add(r, population.get(k).x_coord, population.get(k).y_coord);
+                                    newGrid.setHalignment(r, HPos.CENTER);
+                                    newGrid.setValignment(r, VPos.CENTER);
+                                    break;
+                                case STAR:
+                                    double newMin2 = min * 0.1;
+                                    Polygon t1 = new Polygon();
+                                    Polygon t2 = new Polygon();
+                                    t1.getPoints().addAll(
+                                            min * 0.5, min * 0.5,
+                                            0.0, min * 0.5,
+                                            min * 0.5 / 2, 0.0);
+                                    t1.setFill(population.get(k).viewFillColor());
+                                    t1.setStroke(population.get(k).viewOutlineColor());
+                                    t1.setStrokeWidth(1);
+                                    t2.getPoints().addAll(
+                                            0.0, newMin2,
+                                            min * 0.5, newMin2,
+                                            (double) min * 0.5 / 2, newMin2 + min * 0.5); //Need to put different parameters in addAll()
+                                    t2.setFill(population.get(k).viewFillColor());
+                                    t2.setStroke(population.get(k).viewOutlineColor());
+                                    t2.setStrokeWidth(1);
+                                    newGrid.add(Shape.union(t1, t2), population.get(k).x_coord, population.get(k).y_coord);
 
-        //gridpane.getColumnConstraints().add(new ColumnConstraints(Params.world_width));
-        //gridpane.getRowConstraints().add(new RowConstraints(Params.world_height));
+                                    break;
+                                case TRIANGLE:
+                                    Polygon t = new Polygon();
+                                    t.getPoints().addAll(
+                                            min * 0.8, min * 0.8,
+                                            0.0, min * 0.8,
+                                            min * 0.8 / 2, 0.0
+                                    );
+                                    t.setFill(population.get(k).viewFillColor());
+                                    t.setStroke(population.get(k).viewOutlineColor());
+                                    t.setStrokeWidth(1);
+                                    newGrid.add(t, population.get(k).x_coord, population.get(k).y_coord);
+                                    newGrid.setHalignment(t, HPos.CENTER);
+                                    newGrid.setValignment(t, VPos.CENTER);
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        }
+                    } else{
+                        for(int m = 0; m < babies.size(); m++) {            //If a critter is not found in population list for the current coordinates,
+                            if (babies.get(m).y_coord == i && babies.get(m).x_coord == j) {
+                                if(babies.get(m).energy > 0){
+                                    //found = true;
+                                    switch (population.get(i).viewShape()) {
+                                        case CIRCLE:
+                                            Circle c = new Circle();
+                                            //c.radiusProperty().bind((Main.critterWorld.widthProperty().divide(Params.world_width*2)));
+                                            c.setRadius(0.4 * min);
+                                            c.setFill(population.get(m).viewFillColor());
+                                            c.setStroke(population.get(m).viewOutlineColor());
+                                            c.setStrokeWidth(1);
+                                            newGrid.add(c, population.get(m).x_coord, population.get(m).y_coord);
+                                            newGrid.setHalignment(c, HPos.CENTER);
+                                            newGrid.setValignment(c, VPos.CENTER);
+                                            break;
+                                        case DIAMOND:
+                                            double newMin = min * 0.8;
+                                            Polygon d1 = new Polygon();
+                                            d1.getPoints().addAll(
+                                                    newMin / 3, 0.0,
+                                                    0.0, newMin / 2,
+                                                    newMin / 3, newMin,
+                                                    (newMin / 3) * 2.0, newMin / 2
+                                            );
+                                            d1.setFill(population.get(m).viewFillColor());
+                                            d1.setStroke((population.get(m).viewOutlineColor()));
+                                            d1.setStrokeWidth(1);
+                                            newGrid.add(d1, population.get(m).x_coord, population.get(m).y_coord);
+                                            newGrid.setHalignment(d1, HPos.CENTER);
+                                            newGrid.setValignment(d1, VPos.CENTER);
+                                            break;
+                                        case SQUARE:
+                                            Rectangle r = new Rectangle();
+                                            r.heightProperty().set(0.8 * min);
+                                            r.widthProperty().set(0.8 * min);
+                                            r.setFill(population.get(m).viewFillColor());
+                                            r.setStroke(population.get(m).viewOutlineColor());
+                                            r.setStrokeWidth(1);
+                                            newGrid.add(r, population.get(m).x_coord, population.get(m).y_coord);
+                                            newGrid.setHalignment(r, HPos.CENTER);
+                                            newGrid.setValignment(r, VPos.CENTER);
+                                            break;
+                                        case STAR:
+                                            double newMin2 = min * 0.1;
+                                            Polygon t1 = new Polygon();
+                                            Polygon t2 = new Polygon();
+                                            t1.getPoints().addAll(
+                                                    min * 0.5, min * 0.5,
+                                                    0.0, min * 0.5,
+                                                    min * 0.5 / 2, 0.0);
+                                            t2.getPoints().addAll(
+                                                    0.0, newMin2,
+                                                    min * 0.5, newMin2,
+                                                    (double) min * 0.5 / 2, newMin2 + min * 0.5); //Need to put different parameters in addAll()
+                                            Shape s = Shape.union(t1, t2);
+                                            s.setFill(population.get(m).viewFillColor());
+                                            s.setStroke(population.get(m).viewOutlineColor());
+                                            s.setStrokeWidth(1);
+                                            newGrid.add(s, population.get(m).x_coord, population.get(m).y_coord);
+                                            newGrid.setHalignment(s, HPos.CENTER);
+                                            newGrid.setValignment(s, VPos.CENTER);
+                                            break;
+                                        case TRIANGLE:
+                                            Polygon t = new Polygon();
+                                            t.getPoints().addAll(
+                                                    min * 0.8, min * 0.8,
+                                                    0.0, min * 0.8,
+                                                    min * 0.8 / 2, 0.0
+                                            );
+                                            t.setFill(population.get(m).viewFillColor());
+                                            t.setStroke(population.get(m).viewOutlineColor());
+                                            t.setStrokeWidth(1);
+                                            newGrid.add(t, population.get(m).x_coord, population.get(m).y_coord);
+                                            newGrid.setHalignment(t, HPos.CENTER);
+                                            newGrid.setValignment(t, VPos.CENTER);
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
 
-        /*NumberBinding minSide = Bindings
-                .min(Main.critterWorld.heightProperty(), Main.critterWorld.widthProperty())
-                .divide(population.size());
-        */
-        int scaling = Math.min(Params.world_width / Params.world_height, Params.world_width / Params.world_height);
 
-        for(int i = 0; i < population.size(); i++){         //Set dimensions for each shape
-            switch(population.get(i).viewShape()){
-                case CIRCLE:
-                    Circle c = new Circle();
-                    c.radiusProperty().bind((Main.critterWorld.widthProperty().divide(Params.world_width)).divide(2));
-                    // ??
-                    // ??
-                    // ??
-                    c.setFill(population.get(i).viewFillColor());
-                    c.setStroke(population.get(i).viewOutlineColor());
-                    c.setStrokeWidth(3);
-                    Main.critterWorld.add(c, population.get(i).x_coord, population.get(i).y_coord);
-                    break;
-                case DIAMOND:
-                    Polygon d1 = new Polygon();
-                    d1.getPoints().addAll(
-                            (double)scaling/2, 0.0,
-                            0.0, (double) scaling/2,
-                            (double) scaling/2, (double) scaling,
-                            (double) scaling, (double) scaling/2
-                    );
-                    d1.setFill(population.get(i).viewFillColor());
-                    d1.setStroke((population.get(i).viewOutlineColor()));
-                    d1.setStrokeWidth(3);
-                    Main.critterWorld.add(d1, population.get(i).x_coord, population.get(i).y_coord);
-                    break;
-                case SQUARE:
-                    Rectangle r = new Rectangle();
-                    r.widthProperty().bind(Main.critterWorld.widthProperty().divide(Params.world_width));
-                    r.heightProperty().bind(Main.critterWorld.heightProperty().divide(Params.world_height));
-                    r.setFill(population.get(i).viewFillColor());
-                    r.setStroke(population.get(i).viewOutlineColor());
-                    r.setStrokeWidth(3);
-                    Main.critterWorld.add(r, population.get(i).x_coord, population.get(i).y_coord);
-                    break;
-                case STAR:
-                    Polygon t1 = new Polygon();
-                    Polygon t2 = new Polygon();
-                    t1.getPoints().addAll(
-                            (double) scaling/2,0.0,
-                            0.0, (double)scaling,
-                            (double)scaling, (double)scaling); //Need to put different parameters in addAll()
-                    t1.setFill(population.get(i).viewFillColor());
-                    t1.setStroke(population.get(i).viewOutlineColor());
-                    t1.setStrokeWidth(3);
-                    t2.getPoints().addAll(
-                            0.0, 0.0,
-                            (double)scaling, 0.0,
-                            (double)scaling/2, (double)scaling); //Need to put different parameters in addAll()
-                    t2.setFill(population.get(i).viewFillColor());
-                    t2.setStroke(population.get(i).viewOutlineColor());
-                    t2.setStrokeWidth(3);
-                    Main.critterWorld.add(t1, population.get(i).x_coord, population.get(i).y_coord);
-                    Main.critterWorld.add(t2, population.get(i).x_coord, population.get(i).y_coord);
-                    break;
-                case TRIANGLE:
-                    Polygon t = new Polygon();
-                    t.getPoints().addAll(
-                            (double) scaling/2,0.0,
-                            0.0, (double)scaling,
-                            (double)scaling, (double)scaling);
-                    t.setFill(population.get(i).viewFillColor());
-                    t.setStroke(population.get(i).viewOutlineColor());
-                    t.setStrokeWidth(3);
-                    Main.critterWorld.add(t, population.get(i).x_coord, population.get(i).y_coord);
-                    break;
+                }
             }
         }
 
+
+    Main.showWorld(newGrid);
 
     }
 	
@@ -526,14 +666,62 @@ public abstract class Critter {
 	 * critter_class_name must be the name of a concrete subclass of Critter, if not
 	 * an InvalidCritterException must be thrown
 	 */
-	public static void makeCritter(String critter_class_name) throws InvalidCritterException {}
+	public static void makeCritter(String critter_class_name) throws InvalidCritterException {
+        try{
+            Critter newCritter = (Critter) Class.forName("assignment5." + critter_class_name).newInstance();    //Creating a new Critter of the subclass indicated by critter_class_name
+            newCritter.energy = Params.start_energy;                                    //Set critter's instance variables to standard ones
+            newCritter.x_coord = Critter.getRandomInt(Params.world_width);
+            newCritter.y_coord = Critter.getRandomInt(Params.world_height);
+            newCritter.moved = false;
+
+            Critter.population.add(newCritter);                   //Add the new critter to the population list
+        }catch(InstantiationException | ClassNotFoundException | IllegalAccessException | NoClassDefFoundError event){  //If "critter_class_name is not valid,
+            throw new InvalidCritterException(critter_class_name);                                                   //Error
+        }
+    }
 	
 	public static List<Critter> getInstances(String critter_class_name) throws InvalidCritterException {
-		return null;
+        List<Critter> result = new java.util.ArrayList<Critter>();
+
+
+        try{
+            Class<?> critterClass = Class.forName("assignment5." + critter_class_name);
+            for(int i = 0; i < population.size(); i++){
+                if(critterClass.isInstance(population.get(i))) {            //If the critter from population list is an instance of "critterClass",
+                    result.add(population.get(i));                          //Add the critter to the result list
+                }
+            }
+
+            critterClass.getMethod("runStats", List.class).invoke(null, result);    //Run the stats for the result list
+
+        }catch(ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException event){  //If "critter_class_name" is not valid,
+            throw new InvalidCritterException(critter_class_name);                                                //Error
+        }
+
+
+        return result;
 	}
 	
 	public static String runStats(List<Critter> critters) {
-	    return "";
+        String statsReturn = "";
+        statsReturn += (critters.size() + " critters as follows -- ");
+        Map<String, Integer> critter_count = new HashMap<String, Integer>();
+        for (Critter crit : critters) {
+            String crit_string = crit.toString();
+            Integer old_count = critter_count.get(crit_string);
+            if (old_count == null) {
+                critter_count.put(crit_string,  1);
+            } else {
+                critter_count.put(crit_string, old_count.intValue() + 1);
+            }
+        }
+        String prefix = "";
+        for (String s : critter_count.keySet()) {
+            statsReturn += prefix + s + ":" + critter_count.get(s);
+            prefix = ", ";
+        }
+        statsReturn += "\n";
+        return statsReturn;
     }
 	
 	/* the TestCritter class allows some critters to "cheat". If you want to 
@@ -595,6 +783,7 @@ public abstract class Critter {
 	    population.clear();
 	    babies.clear();
 	    oldPopulation.clear();
+	    Main.showWorld(new GridPane());
 	}
 	
 	
