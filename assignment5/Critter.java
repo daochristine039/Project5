@@ -7,8 +7,7 @@ import java.util.List;
 
 import javafx.application.*;
 
-import javafx.beans.binding.Bindings;
-import javafx.beans.binding.NumberBinding;
+
 import javafx.geometry.HPos;
 import javafx.geometry.VPos;
 import javafx.scene.shape.*;
@@ -73,24 +72,29 @@ public abstract class Critter {
 	static {
 		myPackage = Critter.class.getPackage().toString().split(" ")[1];
 	}
-	
+
+    /**
+     *  Critter can call this method to look at the critters in cells around it
+     * @param direction in which critter wants to look
+     * @param steps : false if walking, true if running
+     */
 	protected final String look(int direction, boolean steps) {
 	    this.energy -= Params.look_energy_cost;
 	    int thisX, thisY;
 
-	    thisX = oldPopulation.get(this).getX();
+	    thisX = oldPopulation.get(this).getX();         //Get old coordinates from critter
 	    thisY = oldPopulation.get(this).getY();
 
-        if(!this.lookInvoked){
+        if(!this.lookInvoked){                          //If lookInvoked is false, then set coordinates to the old ones
             thisX = oldPopulation.get(this).getX();
             thisY = oldPopulation.get(this).getY();
-        } else if(this.lookInvoked){
+        } else if(this.lookInvoked){                    //If lookInvoked = true, then set coordinates to the current ones
             thisX = this.x_coord;
             thisY = this.y_coord;
         }
 
-        if(!steps){
-            switch(direction){
+        if(!steps){                    //If steps = false,
+            switch(direction){         //set thisX and thisY to 1 position away from critter in the direction specified
                 case 0:
                     thisX += 1;
                     break;
@@ -123,7 +127,7 @@ public abstract class Critter {
                     break;
             }
         } else{
-            switch(direction){
+            switch(direction){        //If steps = true, set thisX and thisY to 2 positions away from critter
                 case 0:
                     thisX += 2;
                     break;
@@ -157,16 +161,16 @@ public abstract class Critter {
             }
         }
 
-        if(!lookInvoked) {
-            for (Critter Return : oldPopulation.keySet()) {
-                if (Return.x_coord == thisX && Return.y_coord == thisY) {
-                    return Return.toString();
+        if(!lookInvoked) {                  //If lookInvoked = false,
+            for (Critter Return : oldPopulation.keySet()) { //Look through oldPopulation critter list
+                if (Return.x_coord == thisX && Return.y_coord == thisY) { //If the Return critter has the same coordinates as thisX, thisY
+                    return Return.toString();                             //Return the string of the critter
                 }
             }
         } else{
-            for(Critter Return : population){
-                if(Return.x_coord == thisX && Return.y_coord == thisY && Return.energy > 0){
-                    return Return.toString();
+            for(Critter Return : population){   //If lookInvoked = true, look through the current population
+                if(Return.x_coord == thisX && Return.y_coord == thisY && Return.energy > 0){  //If the coordinates match and the critter is alive
+                    return Return.toString();           //Return the string
                 }
             }
         }
@@ -198,7 +202,13 @@ public abstract class Critter {
 
 	private boolean moved;
 	private boolean lookInvoked;
-	
+
+    /**
+     * Move the critter in the direction indicated by "int direction" by one spot
+     * Remove the cost of energy required for walking from the critter
+     * Make "moved = true" since the critter moves
+     * @param direction of the critter
+     */
 	protected final void walk(int direction) {
         energy -= Params.walk_energy_cost;  //Remove the cost of energy for walking from the critter
         moved = true;                       //The critter moves
@@ -249,7 +259,13 @@ public abstract class Critter {
             y_coord += Params.world_height;
         }
     }
-	
+
+    /**
+     * move the critter in the direction indicated by "int direction" by two spots
+     * Remove the cost of energy required for running from the critter
+     * Make "moved = true" since the critter moves
+     * @param direction of the critter
+     */
 	protected final void run(int direction) {
         energy -= Params.run_energy_cost;   //Remove cost of energy from running
         moved = true;                       //Critter moves
@@ -301,7 +317,12 @@ public abstract class Critter {
         }
 
     }
-	
+
+    /**
+     * Create a new critter based on the parent
+     * @param direction of the critter
+     * @param offspring : new child of the parent
+     */
 	protected final void reproduce(Critter offspring, int direction) {
         if(this.energy < Params.min_reproduce_energy){     //If the energy level of the parent is lower than the minimum energy to reproduce,
             return;                                        //Return
@@ -333,8 +354,8 @@ public abstract class Critter {
 
 	public abstract void doTimeStep();
 	public abstract boolean fight(String opponent);
-	
-	
+
+
 	public static void worldTimeStep() {
 	    for(Critter current: population){
 	        current.lookInvoked = false;
@@ -427,7 +448,8 @@ public abstract class Critter {
             population.get(i).lookInvoked = false;
         }
 
-        for (int i = 0; i < Params.refresh_algae_count; i++) {    //Create new Algae critters as many times as the refresh_algae_count
+        int helper = Params.refresh_algae_count;
+        for (int i = 0; i < helper; i++) {    //Create new Algae critters as many times as the refresh_algae_count
             try {
                 makeCritter("Algae");
             }catch(InvalidCritterException event){
@@ -438,37 +460,25 @@ public abstract class Critter {
         population.addAll(babies);              //Add all the babies to the population
         babies.clear();                         //Clear all the babies from babies list
         oldPopulation.clear();
-
     }
-	
-	/*public static void displayWorld(Object pane) {
 
-    }
-    */
-
-	/* Alternate displayWorld, where you use Main.<pane> to reach into your
-	   display component.
-	   // public static void displayWorld() {}
-	*/
+	/*
+	* Prints out the entire world
+	**/
     public static void displayWorld() {
-        //int size = 20;
-        int width = 1050;
-        int height = 600;
-        double widthCell = (double) width / (double) Params.world_width;
-        double heightCell = (double) height / (double) Params.world_height;
+        int width = 1050;                   //Width of the gridpane
+        int height = 600;                   //Height of the gridpane
+        double widthCell = (double) width / (double) Params.world_width;    //Get width of a single cell
+        double heightCell = (double) height / (double) Params.world_height; //Get height "  '   '   '   '
 
-        double min = Math.min(widthCell, heightCell);
+        double min = Math.min(widthCell, heightCell);   //Get the shortest side of cell to fit shape
 
-        //Main.critterWorld.getChildren().clear();
-        //gridpane.setGridLinesVisible(true);
-        //Scene newScene = new Scene();
-
-        GridPane newGrid = new GridPane();
+        GridPane newGrid = new GridPane();              //Create a new gridpane
         newGrid.setGridLinesVisible(true);
 
         final int numCols = Params.world_width;
         final int numRows = Params.world_height;
-        for(int i = 0; i < numCols; i++) {
+        for(int i = 0; i < numCols; i++) {              //Limit the columns and rows
             ColumnConstraints colConst = new ColumnConstraints();
             colConst.setPercentWidth(100.0 / numCols);
             newGrid.getColumnConstraints().add(colConst);
@@ -480,14 +490,12 @@ public abstract class Critter {
         }
 
 
-        for(int i = 0; i < Params.world_height; i++){
-            //boolean found;
-            for (int j = 0; j < Params.world_width; j++){
-                //found = false;
-                for(int k = 0; k < population.size(); k++){
-                    if(population.get(k).y_coord == i && population.get(k).x_coord == j){
-                        if(population.get(k).energy > 0) {
-                            switch (population.get(k).viewShape()) {
+        for(int i = 0; i < Params.world_height; i++){           //Y cell coordinate
+            for (int j = 0; j < Params.world_width; j++){       //X cell coordinate
+                for(int k = 0; k < population.size(); k++){     //Go through population list
+                    if(population.get(k).y_coord == i && population.get(k).x_coord == j){   //If the current critter has the coordinates as the current cell
+                        if(population.get(k).energy > 0) {                  //And if the current critter is alive
+                            switch (population.get(k).viewShape()) {        //Create the shape
                                 case CIRCLE:
                                     Circle c = new Circle();
                                     c.setRadius(0.4 * min);
@@ -499,7 +507,7 @@ public abstract class Critter {
                                     newGrid.setValignment(c, VPos.CENTER);
                                     break;
                                 case DIAMOND:
-                                    double newMin = min * 0.8;
+                                    double newMin = min * 0.8;          //Use 80% of smallest side of cell to fit critter
                                     Polygon d1 = new Polygon();
                                     d1.getPoints().addAll(
                                             newMin / 3, 0.0,
@@ -539,12 +547,11 @@ public abstract class Critter {
                                     t2.getPoints().addAll(
                                             0.0, newMin2,
                                             min * 0.5, newMin2,
-                                            (double) min * 0.5 / 2, newMin2 + min * 0.5); //Need to put different parameters in addAll()
+                                            (double) min * 0.5 / 2, newMin2 + min * 0.5);
                                     t2.setFill(population.get(k).viewFillColor());
                                     t2.setStroke(population.get(k).viewOutlineColor());
                                     t2.setStrokeWidth(1);
                                     newGrid.add(Shape.union(t1, t2), population.get(k).x_coord, population.get(k).y_coord);
-
                                     break;
                                 case TRIANGLE:
                                     Polygon t = new Polygon();
@@ -567,13 +574,11 @@ public abstract class Critter {
                         }
                     } else{
                         for(int m = 0; m < babies.size(); m++) {            //If a critter is not found in population list for the current coordinates,
-                            if (babies.get(m).y_coord == i && babies.get(m).x_coord == j) {
+                            if (babies.get(m).y_coord == i && babies.get(m).x_coord == j) { //Find in babies list
                                 if(babies.get(m).energy > 0){
-                                    //found = true;
                                     switch (population.get(i).viewShape()) {
                                         case CIRCLE:
                                             Circle c = new Circle();
-                                            //c.radiusProperty().bind((Main.critterWorld.widthProperty().divide(Params.world_width*2)));
                                             c.setRadius(0.4 * min);
                                             c.setFill(population.get(m).viewFillColor());
                                             c.setStroke(population.get(m).viewOutlineColor());
@@ -658,7 +663,7 @@ public abstract class Critter {
         }
 
 
-    Main.showWorld(newGrid);
+    Main.showWorld(newGrid);        //Replace the current gridpane with the new one
 
     }
 	
@@ -701,7 +706,12 @@ public abstract class Critter {
 
         return result;
 	}
-	
+
+    /**
+     * Prints out how many Critters of each type there are on the board.
+     * @param critters List of Critters.
+     * @return String of Critter stats
+     */
 	public static String runStats(List<Critter> critters) {
         String statsReturn = "";
         statsReturn += (critters.size() + " critters as follows -- ");

@@ -23,39 +23,71 @@ public class Main extends Application {
     String critterToGetStatsFor = "";
     String critterMaking = "";
     String statsResultDisplay = "";
+
+    /**
+     * start is where the program truly begins execution
+     * @param primaryStage stage for program
+     * @throws Exception
+     */
     @Override
     public void start(Stage primaryStage) throws Exception{
-        screen = new BorderPane();	//entire simulation in BorderPane
+        screen = new BorderPane(); //entire simulation in BorderPane
         Scene scene = new Scene(screen, 1400, 700);
         HBox makeRow = makeCommandsRow();
         HBox stepsRow = stepCommandsRow();
-        GridPane controls = new GridPane();	//controls for step and make are at top
+        GridPane controls = new GridPane();    //controls for step and make are at top
         controls.add(makeRow, 1, 0);
         controls.add(stepsRow, 1, 1);
-        screen.setTop(controls);	//set top to control panel
+        screen.setTop(controls);   //set top to control panel
         primaryStage.setTitle("Critters World");
-        //
-        critterWorld = new GridPane();
-        critterWorld.setGridLinesVisible(true);
-        final int numCols = Params.world_width;
-        final int numRows = Params.world_height;
-        for(int i = 0; i < numCols; i++) {
-            ColumnConstraints colConst = new ColumnConstraints();
-            colConst.setPercentWidth(100.0 / numCols);
-            critterWorld.getColumnConstraints().add(colConst);
-        }
-        for(int i = 0; i < numRows; i++) {
-            RowConstraints rowConst = new RowConstraints();
-            rowConst.setPercentHeight(100.0 / numRows);
-            critterWorld.getRowConstraints().add(rowConst);
-        }
-        //
-        //critterWorld = getCritterWorld();
+        critterWorld = getCritterWorld();
         screen.setCenter(critterWorld);
-        GridPane statsDisplay = null; //= getStatsDisplay();
-        //
+        GridPane statsDisplay = getStatsDisplay();
+        HBox seedBox = getSeedBox();
+        statsDisplay.add(seedBox, 1, 4);
+        screen.setLeft(statsDisplay);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    /**
+     * getSeedBox builds the component that allows user to input seed
+     * @return HBox with seed command prompts
+     */
+    public HBox getSeedBox() {
+        Label seedLabel = new Label("Enter Seed for Sequence: ");
+        seedLabel.setTextFill(Color.WHITE);
+        TextField inputSeed = new TextField();
+        Button generalStepButton = new Button("Seed");
+        generalStepButton.setOnAction(new EventHandler<ActionEvent>() {
+            boolean failed = false;
+            @Override
+            public void handle(ActionEvent event) {
+                try {
+                    int userInSeed = Integer.parseInt(inputSeed.getText());
+                    Critter.setSeed(userInSeed);
+                } catch(Exception e) {
+                    inputSeed.setText("Enter an Integer");
+                    inputSeed.setStyle("-fx-text-fill: red");
+                }
+            }
+        });
+        HBox seedBox = new HBox();
+        seedBox.setPadding(new Insets(15, 12, 14, 12));    //general formatting
+        seedBox.setSpacing(10);
+        seedBox.setStyle("-fx-background-color: #336699;");
+        seedBox.getChildren().addAll(seedLabel, inputSeed, generalStepButton); //providing for seed functionality
+        return seedBox;
+    }
+
+    /**
+     * getStatsDisplay builds the component that allows user to request stats
+     * @return GridPane with stats components on display
+     */
+    public GridPane getStatsDisplay() {
+        GridPane statsDisplay = new GridPane();
         critterToGetStatsFor = "";
-        Label statsLabel = new Label("Show me the stats for: ");
+        Label statsLabel = new Label("Show me the stats for: ");   //Critter options to get stats of
         statsLabel.setTextFill(Color.WHITE);
         MenuItem menuItem1 = new MenuItem("Craig");
         MenuItem menuItem2 = new MenuItem("Algae");
@@ -67,9 +99,7 @@ public class Main extends Application {
         MenuItem menuItem8 = new MenuItem("Critter4");
         MenuButton statsRequestMenu = new MenuButton(("Choose Critter"), null, menuItem1, menuItem2, menuItem3, menuItem4, menuItem5, menuItem6, menuItem7, menuItem8);
         statsDisplay = new GridPane();
-        //statsRequest.setPadding(new Insets(15, 12, 14, 12));
-        //statsRequest.setStyle("-fx-background-color: #336699;");
-        menuItem8.setOnAction(new EventHandler<ActionEvent>() {
+        menuItem8.setOnAction(new EventHandler<ActionEvent>() {    //set proper values depending on user selection
             @Override
             public void handle(ActionEvent event) {
                 statsRequestMenu.setText("Critter4");
@@ -114,7 +144,6 @@ public class Main extends Application {
                 statsRequestMenu.setText("Algaephobic Critter");
                 try {
                     critterToGetStatsFor = "AlgaephobicCritter";
-                    //Critter.makeCritter("AlgaephobicCritter");
                 }
                 catch(Exception e) {
                     System.err.println("issue- stats Algaephobic Critter");
@@ -127,7 +156,6 @@ public class Main extends Application {
                 statsRequestMenu.setText("Algae");
                 try {
                     critterToGetStatsFor = "Algae";
-                    //Critter.makeCritter("Algae");
                 }
                 catch(Exception e) {
                     System.err.println("issue making algae");
@@ -140,7 +168,6 @@ public class Main extends Application {
                 statsRequestMenu.setText("Craig");
                 try {
                     critterToGetStatsFor = "Craig";
-                    //Critter.makeCritter("Craig");
                 } catch(Exception e) {
                     System.err.println("issue making Craig");
                 }
@@ -154,7 +181,7 @@ public class Main extends Application {
                 try {
                     statsRequestMenu.setText("Choose Critter");
                     statsLabel.setText("Show me the stats for: ");
-                    List<Critter> instances = Critter.getInstances(critterToGetStatsFor);
+                    List<Critter> instances = Critter.getInstances(critterToGetStatsFor);  //getting stats for specified critter
                     statsResultDisplay = Critter.runStats(instances);
                     statsResultsLabel.setText(statsResultDisplay);
                 } catch(Exception e) {
@@ -181,41 +208,20 @@ public class Main extends Application {
             }
         });
         statsDisplay.add(quit, 1, 8);
-        Label seedLabel = new Label("Enter Seed for Sequence: ");
-        seedLabel.setTextFill(Color.WHITE);
-        TextField inputSeed = new TextField();
-        Button generalStepButton = new Button("Seed");
-        generalStepButton.setOnAction(new EventHandler<ActionEvent>() {
-            boolean failed = false;
-            @Override
-            public void handle(ActionEvent event) {
-                try {
-                    int userInSeed = Integer.parseInt(inputSeed.getText());
-                    Critter.setSeed(userInSeed);
-                } catch(Exception e) {
-                    inputSeed.setText("Enter an Integer");
-                    inputSeed.setStyle("-fx-text-fill: red");
-                }
-            }
-        });
-        HBox seedBox = new HBox();
-        seedBox.setPadding(new Insets(15, 12, 14, 12));
-        seedBox.setSpacing(10);
-        seedBox.setStyle("-fx-background-color: #336699;");
-        seedBox.getChildren().addAll(seedLabel, inputSeed, generalStepButton);
-        statsDisplay.add(seedBox, 1, 4);
-        screen.setLeft(statsDisplay);
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        return statsDisplay;
     }
 
-    public GridPane getCritterWorld() {
-        GridPane critWorld = new GridPane();
+    /**
+     * getCritterWorld returns new Critter World
+     * @return new crittle world
+     */
+    public static GridPane getCritterWorld() {
+        critterWorld = new GridPane();
         critterWorld.setGridLinesVisible(true);
         final int numCols = Params.world_width;
         final int numRows = Params.world_height;
         for(int i = 0; i < numCols; i++) {
-            ColumnConstraints colConst = new ColumnConstraints();
+            ColumnConstraints colConst = new ColumnConstraints();  //set format for critterWorld
             colConst.setPercentWidth(100.0 / numCols);
             critterWorld.getColumnConstraints().add(colConst);
         }
@@ -224,111 +230,22 @@ public class Main extends Application {
             rowConst.setPercentHeight(100.0 / numRows);
             critterWorld.getRowConstraints().add(rowConst);
         }
-        return critWorld;
+        return critterWorld;
     }
 
-    public GridPane getStatsDisplay() {
-        critterToGetStatsFor = "";
-        Label statsLabel = new Label("Show me the stats for: ");
-        MenuItem menuItem1 = new MenuItem("Craig");
-        MenuItem menuItem2 = new MenuItem("Algae");
-        MenuItem menuItem3 = new MenuItem("Algaephobic Critter");
-        MenuButton statsRequestMenu = new MenuButton(("Choose Critter"), null, menuItem1, menuItem2, menuItem3);
-//		MenuButton statsRequestMenu = new MenuButton(("Choose Critter"));
-//		Reflections reflections = new Reflections("assignment5");
-//		Set<Class<? extends Critter>> critterInstances = reflections.getSubTypesOf(Critter.class);
-//		ArrayList<String> sortedCritters = new ArrayList<>();
-//		//ChoiceBox<String> listOfCritters = new ChoiceBox<>();
-//		for(Class c: critterInstances) {
-//			String s = c.getName();
-//			s = s.substring(s.indexOf(".") + 1);
-//			sortedCritters.add(s);
-//		}
-//		Collections.sort(sortedCritters);
-//		for(int i = 1; i <= sortedCritters.size(); i++) {
-//			MenuItem menuItem1 = new MenuItem();
-//		}
-//		statsRequestMenu.getItems().addAll(sortedCritters);
-        GridPane statsRequest = new GridPane();
-        //statsRequest.setPadding(new Insets(15, 12, 14, 12));
-        //statsRequest.setStyle("-fx-background-color: #336699;");
-        menuItem3.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                statsRequestMenu.setText("Algaephobic Critter");
-                try {
-                    critterToGetStatsFor = "AlgaephobicCritter";
-                    //Critter.makeCritter("AlgaephobicCritter");
-                }
-                catch(Exception e) {
-                    System.err.println("issue- stats Algaephobic Critter");
-                }
-            }
-        });
-        menuItem2.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                statsRequestMenu.setText("Algae");
-                try {
-                    critterToGetStatsFor = "Algae";
-                    //Critter.makeCritter("Algae");
-                }
-                catch(Exception e) {
-                    System.err.println("issue making algae");
-                }
-            }
-        });
-        menuItem1.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                statsRequestMenu.setText("Craig");
-                try {
-                    critterToGetStatsFor = "Craig";
-                    //Critter.makeCritter("Craig");
-                } catch(Exception e) {
-                    System.err.println("issue making Craig");
-                }
-            }
-        });
-        Button getStatsButton = new Button("Get My Stats");
-        getStatsButton.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                try {
-                    statsRequestMenu.setText("Choose Critter");
-                    statsLabel.setText("Show me the stats for: ");
-                    if(critterToGetStatsFor.equals("Algaephobic Critter")) {
-                        critterToGetStatsFor = "AlgaephobicCritter";
-                    }
-                    List<Critter> instances = Critter.getInstances(critterToGetStatsFor);
-                    statsResultDisplay = Critter.runStats(instances);
-                } catch(Exception e) {
-                    statsRequestMenu.setText("Choose Valid Critter");
-                    System.err.println("unable to retrieve instances");
-                }
-            }
-        });
-        Label statsResultsLabel = new Label(statsResultDisplay);
-        statsResultsLabel.setTextFill(Color.WHITE);
-        HBox statsRow = new HBox();
-        //statsRow.getChildren().addAll(statsLabel, listOfCritters, getStatsButton);
-        statsRequest.add(statsLabel, 1, 1);
-        statsRequest.add(statsRequestMenu, 2, 1);
-        statsRequest.add(getStatsButton, 3, 2);
-        statsRequest.add(statsResultsLabel, 1, 3);
-        return statsRequest;
-    }
-
-
+    /**
+     * make the step command options
+     * @return HBox with step command options
+     */
     public HBox stepCommandsRow() {
         HBox stepCommands = new HBox();
         stepCommands.setPadding(new Insets(15, 12, 14, 12));
         stepCommands.setSpacing(10);
-        stepCommands.setStyle("-fx-background-color: #336699;");
+        stepCommands.setStyle("-fx-background-color: #336699;");   //general formatting
         Button singleStepButton = new Button("Single Step");
         singleStepButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override
-            public void handle(ActionEvent event) {
+            public void handle(ActionEvent event) {    //single world time step
                 Critter.worldTimeStep();
                 Critter.displayWorld();
             }
@@ -337,7 +254,7 @@ public class Main extends Application {
         labelNumSteps.setTextFill(Color.WHITE);
         TextField inputNumSteps = new TextField();
         Button generalStepButton = new Button("Step");
-        generalStepButton.setOnAction(new EventHandler<ActionEvent>() {
+        generalStepButton.setOnAction(new EventHandler<ActionEvent>() {    //cycle through proper number of steps
             boolean failed = false;
             @Override
             public void handle(ActionEvent event) {
@@ -349,9 +266,7 @@ public class Main extends Application {
                     for(int i = 0; i < userInNumSteps; i++) {
                         Critter.worldTimeStep();
                     }
-
                     Critter.displayWorld();
-
                     inputNumSteps.setText("");
                     inputNumSteps.setStyle("-fx-text-fill: black");
                 } catch(Exception e) {
@@ -363,20 +278,24 @@ public class Main extends Application {
         stepCommands.getChildren().addAll(singleStepButton, labelNumSteps, inputNumSteps, generalStepButton);
         return stepCommands;
     }
-    //HBox has all of the command options
+
+    /**
+     * makeCommandsRow makes the HBox with the making critter functionality
+     * @return HBox that holds the make Critter command box
+     */
     public HBox makeCommandsRow() {
         //ChoiceBox<String> critterOptions = new ChoiceBox<>();
-        // 		Set<Class<? extends Critter>> critterInstances = reflections.getSubTypesOf(Critter.class);
-//		ArrayList<String> sortedCritters = new ArrayList<>();
-//		//ChoiceBox<String> listOfCritters = new ChoiceBox<>();
-//		for(Class c: critterInstances) {
-//			String s = c.getName();
-//			s = s.substring(s.indexOf(".") + 1);
-//			sortedCritters.add(s);
-//		}
-//		Collections.sort(sortedCritters);
-//		statsRequestMenu.getItems().addAll(sortedCritters);
-        MenuItem menuItem1 = new MenuItem("Craig");
+        //        Set<Class<? extends Critter>> critterInstances = reflections.getSubTypesOf(Critter.class); REFLECTIONS is for automatically getting subclasses of critter
+//    ArrayList<String> sortedCritters = new ArrayList<>();
+//    //ChoiceBox<String> listOfCritters = new ChoiceBox<>();
+//    for(Class c: critterInstances) {
+//       String s = c.getName();
+//       s = s.substring(s.indexOf(".") + 1);
+//       sortedCritters.add(s);
+//    }
+//    Collections.sort(sortedCritters);
+//    statsRequestMenu.getItems().addAll(sortedCritters);
+        MenuItem menuItem1 = new MenuItem("Craig");    //Types of Critters to make
         MenuItem menuItem2 = new MenuItem("Algae");
         MenuItem menuItem3 = new MenuItem("Algaephobic Critter");
         MenuItem menuItem4 = new MenuItem("Tragic Critter");
@@ -395,14 +314,12 @@ public class Main extends Application {
                 makeCritter.setText("Critter4");
             }
         });
-
         menuItem7.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 makeCritter.setText("Critter3");
             }
         });
-
         menuItem6.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
@@ -425,34 +342,18 @@ public class Main extends Application {
             @Override
             public void handle(ActionEvent event) {
                 makeCritter.setText("Algaephobic Critter");
-                try {
-                    //Critter.makeCritter("AlgaephobicCritter");
-                }
-                catch(Exception e) {
-                    System.err.println("issue making AlgaephobicCritter");
-                }
             }
         });
         menuItem2.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 makeCritter.setText("Algae");
-                try {
-                    //Critter.makeCritter("Algae");
-                }
-                catch(Exception e) {
-                    System.err.println("issue making algae");
-                }
             }
         });
         menuItem1.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 makeCritter.setText("Craig");
-                try {
-                } catch(Exception e) {
-                    System.err.println("issue making Craig");
-                }
             }
         });
         Label numCrittersToMake = new Label("Number of critters to make: ");
@@ -485,7 +386,6 @@ public class Main extends Application {
                             break;
                         }
                     }
-
                     Critter.displayWorld();  //ADDED
                     numCritters.setText("");
                     makeCritter.setText("Choose Critter to Make");
@@ -501,18 +401,21 @@ public class Main extends Application {
                 }
             }
         });
-
-
-
         hbox.getChildren().addAll(makeCritter, numCrittersToMake, numCritters, makeButton);
         return hbox;
     }
+
+    /**
+     * showWorld called to update world show
+     * @param newGrid is the GridPane with updated critters and locations
+     */
     public static void showWorld(GridPane newGrid){
         screen.setCenter(newGrid);
-
     }
 
-
+    /**
+     * All program execution starts from here
+     */
     public static void main(String[] args) {
         launch(args);
     }

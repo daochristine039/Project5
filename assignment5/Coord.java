@@ -1,5 +1,7 @@
 package assignment5;
 
+/*
+* Coordinates used for HashMap*/
 public class Coord {
     private int x;
     private int y;
